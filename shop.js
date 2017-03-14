@@ -1119,14 +1119,14 @@ var shopState = {
        }
        else {
            shopMessageBackground.x = 196;
-         shopMessageText.text = " The Weaponsmith offers upgrades every 30 minutes.";  
+         shopMessageText.text = " The Weaponsmith offers upgrades every 15 minutes.";  
        }
     },
     wandPerk: function() {
         if (game.time.now > wandTimer) {
-            wandTimer = game.time.now + 1800000;
+            wandTimer = game.time.now + 900000;
             if (shieldTimer>game.time.now && wandTimer>game.time.now) {
-                weaponsmithTimer = game.time.now + 1800000;
+                weaponsmithTimer = game.time.now + 900000;
             }
             var wandPerkChance = Math.random()*5;
             //console.log(wandPerkChance);
@@ -1210,9 +1210,9 @@ var shopState = {
     },
     shieldPerk: function() {
         if (game.time.now > shieldTimer) {
-            shieldTimer = game.time.now + 1800000;
+            shieldTimer = game.time.now + 900000;
             if (shieldTimer>game.time.now && wandTimer>game.time.now) {
-                weaponsmithTimer = game.time.now + 1800000;
+                weaponsmithTimer = game.time.now + 900000;
             }
             var shieldPerkChance = Math.random()*5;
             //console.log(shieldPerkChance);
@@ -1421,14 +1421,14 @@ var shopState = {
        }
        else {
            shopMessageBackground.x = 196;
-         shopMessageText.text = "   The Armourer offers upgrades every 30 minutes.";  
+         shopMessageText.text = "   The Armourer offers upgrades every 15 minutes.";  
        }
     },
     armourPerk: function() {
         if (game.time.now > armourTimer) {
-            armourTimer = game.time.now + 1800000;
+            armourTimer = game.time.now + 900000;
             if (bootTimer>game.time.now && hatTimer>game.time.now && armourTimer>game.time.now) {
-                armourerTimer = game.time.now + 1800000;
+                armourerTimer = game.time.now + 900000;
             }
             var armourPerkChance = Math.random()*5;
             //console.log(armourPerkChance);
@@ -1512,9 +1512,9 @@ var shopState = {
     },
     hatPerk: function() {
         if (game.time.now > hatTimer) {
-            hatTimer = game.time.now + 1800000;
+            hatTimer = game.time.now + 900000;
             if (bootTimer>game.time.now && hatTimer>game.time.now && armourTimer>game.time.now) {
-                armourerTimer = game.time.now + 1800000;
+                armourerTimer = game.time.now + 900000;
             }
             var hatPerkChance = Math.random()*5;
             //console.log(hatPerkChance);
@@ -1598,9 +1598,9 @@ var shopState = {
     },
     bootPerk: function() {
         if (game.time.now > bootTimer) {
-            bootTimer = game.time.now + 1800000;
+            bootTimer = game.time.now + 900000;
             if (bootTimer>game.time.now && hatTimer>game.time.now && armourTimer>game.time.now) {
-                armourerTimer = game.time.now + 1800000;
+                armourerTimer = game.time.now + 900000;
             }
             var bootPerkChance = Math.random()*5;
             //console.log(bootPerkChance);
@@ -1707,14 +1707,14 @@ var shopState = {
        }
        else {
            shopMessageBackground.x = 196;
-         shopMessageText.text = "  The Enchanter offers upgrades every 30 minutes.";  
+         shopMessageText.text = "  The Enchanter offers upgrades every 15 minutes.";  
        }
     },
     ringPerk: function() {
         if (game.time.now > ringTimer) {
-            ringTimer = game.time.now + 1800000;
+            ringTimer = game.time.now + 900000;
             if (amuletTimer>game.time.now && ringTimer>game.time.now) {
-                enchanterTimer = game.time.now + 1800000;
+                enchanterTimer = game.time.now + 900000;
             }
             var ringPerkChance = Math.random()*5;
             //console.log(ringPerkChance);
@@ -1797,9 +1797,9 @@ var shopState = {
     },
     amuletPerk: function() {
         if (game.time.now > amuletTimer) {
-          amuletTimer = game.time.now + 1800000;
+          amuletTimer = game.time.now + 900000;
           if (amuletTimer>game.time.now && ringTimer>game.time.now) {
-              enchanterTimer = game.time.now + 1800000;
+              enchanterTimer = game.time.now + 900000;
           }
           var amuletPerkChance = Math.random()*5;
           //console.log(amuletPerkChance);
@@ -1906,14 +1906,14 @@ var shopState = {
        }
        else {
          shopMessageBackground.x = 196;
-         shopMessageText.text = "   The Trainer offers upgrades every 30 minutes.";  
+         shopMessageText.text = "   The Trainer offers upgrades every 15 minutes.";  
        }
     },
     skillPerk: function() {
         if (game.time.now > skillTimer) {
-            skillTimer = game.time.now + 1800000;
+            skillTimer = game.time.now + 900000;
             if (enduranceTimer>game.time.now && skillTimer>game.time.now) {
-                trainerTimer = game.time.now + 1800000;
+                trainerTimer = game.time.now + 900000;
             }
             var skillPerkChance = Math.random()*5;
             //console.log(skillPerkChance);
@@ -1996,9 +1996,9 @@ var shopState = {
     },
     endurancePerk: function() {
         if (game.time.now > enduranceTimer) {
-            enduranceTimer = game.time.now + 1800000;
+            enduranceTimer = game.time.now + 900000;
             if (enduranceTimer>game.time.now && skillTimer>game.time.now) {
-                trainerTimer = game.time.now + 1800000;
+                trainerTimer = game.time.now + 900000;
             }
             var endurancePerkChance = Math.random()*5;
             //console.log(endurancePerkChance);

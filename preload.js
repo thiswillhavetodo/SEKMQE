@@ -38,6 +38,7 @@ var preloadState = {
         game.load.audio('introCreditsMusic', 'assets/Fantasy_Game_Background.ogg');
         game.load.audio('tutorialMusic', 'assets/Left-Behind.ogg');
         game.load.audio('cityMusic', 'assets/Our_Mountain_v003.ogg');
+        game.load.audio('spinSFX', 'assets/spinSFX.ogg');
         game.load.image('rock', 'assets/boulder.png');
         game.load.image('tree', 'assets/Tree.png');
         game.load.image('treeShadow', 'assets/treeShadow.png');

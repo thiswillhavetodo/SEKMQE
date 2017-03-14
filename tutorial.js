@@ -9,6 +9,7 @@ var barriers;
 var targets;
 var lights;
 var soundTriggers;
+var doorOpen = false;
 
 var tutorialPractice = "first";
 var tutorialPracticeSprite;
@@ -71,13 +72,18 @@ var tutorialState = {
         player.body.setSize(26, 30, 3, 3);
         player.body.collideWorldBounds = true;
         player.isAlive = true;
+        player.spinTimer = 0;
         //  Our animations, walking left, right, up and down.
         player.animations.add('left', [9, 10, 11], 10, true);
         player.animations.add('right', [3, 4, 5], 10, true);
         player.animations.add('up', [0, 1, 2], 10, true);
         player.animations.add('down', [6, 7, 8], 10, true);
+        player.animations.add('spin', [14, 12, 15, 13], 8, false);
         player.animations.add('stop', [4], 10, true);
         player.animations.play('stop');
+        
+        spinSFX = game.add.audio('spinSFX');
+        spinSFX.allowMultiple = false;
         
         bullets = game.add.group();
         bullets.enableBody = true;
@@ -410,46 +416,109 @@ var tutorialState = {
         player.body.velocity.x = 0;
         player.body.velocity.y= 0;
         
+        if (player.exists==false && doorOpen==false) {
+            player.exists = true;
+        }
+        
         game.physics.arcade.collide(player, barriers);
         game.physics.arcade.overlap(player, soundTriggers, this.triggerSound, null, this);
         game.physics.arcade.collide(bullets, targets, this.targetKill, null, this);
+        if (spinning) {
+            game.physics.arcade.collide(player, targets, this.targetKill, null, this);
+        }
         game.physics.arcade.collide(bullets, barriers, this.bulletKill, null, this);
         game.physics.arcade.collide(player, door, this.endTutorial, null, this);
         
         if (tutorialPractice!="first") {
             if (aKey.isDown || walkLeft==true)        {
                 //  Move to the left
-                player.body.velocity.x = -runSpeed;
-                player.animations.play('left');
+                if (wKey.isDown==false && sKey.isDown==false) {
+                    diagonalAdjust = 1;
+                }
+                else {
+                    diagonalAdjust = 0.71;
+                }
+                player.body.velocity.x = -((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+                if (spinning) {
+                    player.animations.play('spin'); 
+                }
+                else {
+                    player.animations.play('left');
+                }
                 facing = 'left';
             }
-            else if (dKey.isDown || walkRight==true)      {
+            if (dKey.isDown || walkRight==true)      {
                 //  Move to the right
-                player.body.velocity.x = runSpeed;
-                player.animations.play('right');
+                if (wKey.isDown==false && sKey.isDown==false) {
+                    diagonalAdjust = 1;
+                }
+                else {
+                    diagonalAdjust = 0.71;
+                }
+                player.body.velocity.x = ((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+                if (spinning) {
+                    player.animations.play('spin'); 
+                }
+                else {
+                    player.animations.play('right');
+                }
                 facing = 'right';
             }
-            else if (wKey.isDown || walkUp==true)       {
+            if (wKey.isDown || walkUp==true)       {
                 //  Move up
-                player.body.velocity.y = -runSpeed;
-                player.animations.play('up');
+                if (aKey.isDown==false && dKey.isDown==false) {
+                    diagonalAdjust = 1;
+                }
+                else {
+                    diagonalAdjust = 0.71;
+                }
+                player.body.velocity.y = -((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+                if (spinning) {
+                    player.animations.play('spin'); 
+                }
+                else if (aKey.isDown==false && dKey.isDown==false) {
+                    player.animations.play('up');
+                }
                 facing = 'up';
             }
-            else if (sKey.isDown || walkDown==true)        {
+            if (sKey.isDown || walkDown==true)        {
                 //  Move down
-                player.body.velocity.y = runSpeed;
-                player.animations.play('down');
+                if (aKey.isDown==false && dKey.isDown==false) {
+                    diagonalAdjust = 1;
+                }
+                else {
+                    diagonalAdjust = 0.71;
+                }
+                player.body.velocity.y = ((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+                if (spinning) {
+                    player.animations.play('spin'); 
+                }
+                else if (aKey.isDown==false && dKey.isDown==false) {
+                    player.animations.play('down');
+                }
                 facing = 'down';
             }
-            else        {
+            if (aKey.isDown==false && dKey.isDown==false && wKey.isDown==false && sKey.isDown==false) {
                 //  Stand still
-                player.animations.stop();
+                if (spinning) {
+                    player.animations.play('spin'); 
+                }
+                else {
+                    player.animations.stop();
+                }
+                manaRegenInterval = (manaRegenHolder- manaRegenEndLevelAdjust)*0.25;
             }
             
             if ((cursors.right.isDown || cursors.left.isDown || cursors.up.isDown || cursors.down.isDown || fireLeft==true || fireRight==true || fireUp==true || fireDown==true) && game.time.now>bulletTimer && player.isAlive && mana>=5) {
                 this.fire();
             }
-            
+            if (spaceBar.isDown && spinning==false && mana>=10 && game.time.now>player.spinTimer) {
+                spinning = true;
+                spinSFX.play();
+                player.spinTimer = game.time.now + 750;
+                mana -= 10;
+                game.time.events.add(Phaser.Timer.SECOND * 0.5, function () {   spinning = false; });
+            }
             if (game.input.currentPointers == 0 && !game.input.activePointer.isMouse){ fireLeft=false; fireRight=false; fireUp=false; fireDown=false; walkLeft=false; walkRight=false; walkUp=false; walkDown=false;}
         }
         
@@ -606,7 +675,7 @@ var tutorialState = {
         }
     },
     checkTutorialComplete: function() {
-        if (xp>=8) {
+        if (xp==9) {
             xp += 5;
             this.checkLevelUp();
             tutorialPractice = "second";
@@ -625,11 +694,19 @@ var tutorialState = {
             //game.add.button(303, 282, 'blankButton', this.endTutorial, this);
             //game.add.bitmapText(370, 312, 'fontBorder', 'Continue', 18);
         }
+        else if (xp==8) {
+            suitOfArmour = targets.create(400, 300, 'tutorialObstacles32x44');
+            suitOfArmour.frame = 1;
+            suitOfArmour.body.immovable = true;
+            nextPractice = 'melee';
+            this.trainerUpdate();
+        }
     },
     endTutorial: function() {
         tutorialMusicPlaying = false;
         tutorialMusic.destroy();
         door.animations.play('openDoor');
+        doorOpen = true;
         var doorOpenSFX = game.add.audio('creakylightwoodendoor1');
         doorOpenSFX.play();
         player.kill();
@@ -782,10 +859,10 @@ var tutorialState = {
                 this.create();
                 break;
             case "second":
-                tutorialPractice = "";
-                tutorialPracticeSprite.kill();
-                tutorialPracticeSpeechBubble.kill();
-                this.tutorialShow();
+                tutorialPractice = "second";
+                //tutorialPracticeSprite.kill();
+                //tutorialPracticeSpeechBubble.kill();
+                //this.tutorialShow();
                 break;
         }
     },
@@ -802,7 +879,7 @@ var tutorialState = {
             nextPractice = "left";
             this.trainerUpdate();
         }
-        else if (nextPractice=="left" && player.x<=160) {
+        else if (nextPractice=="left" && player.x<=162) {
             nextPractice = "down";
             this.trainerUpdate();
         }
@@ -849,10 +926,10 @@ var tutorialState = {
             this.trainerText();
             trainerText.text = "  Jolly good!";
             trainerText2.text = "    Finally use the 'S'";
-            trainerText3.text = "     key to walk down to";
-            trainerText4.text = "      the target room for";
-            trainerText5.text = "        some shooting"; 
-            trainerText6.text = "        practice.";
+            trainerText3.text = "     key to walk down. You";
+            trainerText4.text = "   can also move diagonally";
+            trainerText5.text = "     if you use two keys"; 
+            trainerText6.text = "        at once.";
         }
         else if (nextPractice=="shoot" && tutorialPractice=="") {
             this.trainerTextDestroy();
@@ -863,6 +940,17 @@ var tutorialState = {
             trainerText4.text = " each direction. See if you";
             trainerText5.text = "  can hit all eight suits"; 
             trainerText6.text = "     of armour.";
+        }
+        else if (nextPractice=="melee" && tutorialPractice=="") {
+            nextPractice=="hold";
+            this.trainerTextDestroy();
+            this.trainerText();
+            trainerText.text = "  Now press ";
+            trainerText2.text = "  SPACE to use your ";
+            trainerText3.text = "   berserker melee attack.";
+            trainerText4.text = "  You will take damage if";
+            trainerText5.text = "   you use this attack on";
+            trainerText6.text = "    large groups.";
         }
         else if (nextPractice=="") {
             this.trainerTextDestroy();

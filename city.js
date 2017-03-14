@@ -732,7 +732,7 @@ var cityState = {
         evilwizardCount = 0;
         zombieBirdCount = 0;
         swampCreatureCount = 0;
-        starTotal = ((stage-1)*0.75) + (0+8);
+        starTotal = ((stage-1)*0.8) + (0+8.5);
         health = maxHealth;
         mana = maxMana;
         array = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
@@ -1589,10 +1589,10 @@ var cityState = {
                 break;
             case 11:
                 warriorWoman1.speech1.text = "  Department ";
-                warriorWoman1.speech2.text = " funds are allocated  ";
-                warriorWoman1.speech3.text = " at the end of the year.";
-                warriorWoman1.speech4.text = "  Any gold you allocate";
-                warriorWoman1.speech5.text = "   will not be taken ";
+                warriorWoman1.speech2.text = "   funds are allocated  ";
+                warriorWoman1.speech3.text = "    at the end of the year.";
+                warriorWoman1.speech4.text = "    Any gold you allocate";
+                warriorWoman1.speech5.text = "     will not be taken ";
                 warriorWoman1.speech6.text = "  straight away.";
                 break;
             case 12:

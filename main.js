@@ -2,6 +2,8 @@ var platforms;
 var player;
 var playerLegs;
 var dummyPlayer;
+var spinning = false;
+var diagonalAdjust;
 var playerLevel = 1;
 var facing;
 var bullets;
@@ -9,7 +11,7 @@ var bulletTimer = 0;
 var bulletSpacing = 525;
 var beamWeapon = false;
 var shotSpeed = 320;
-var manaCost = 5;
+var manaCost = 4;
 var flameBullets;
 var flameBulletSpacing = 4250;
 var iceBeams;
@@ -63,6 +65,7 @@ var aKey;
 var sKey;
 var dKey;
 var qKey;
+var eKey;
 var buttonFireLeft;
 var fireLeft = false;
 var buttonFireRight;
@@ -120,11 +123,11 @@ var xp = 0;
 var xpDisplay = 0;
 var nextLevelXp = 10;
 var nextLevelXpDisplay = 10;
-var health = 5;
-var maxHealth = 5;
+var health = 6;
+var maxHealth = 6;
 var mana = 75;
 var maxMana = 75;
-var starTotal = 8;
+var starTotal = 8.5;
 var baddieTotal = 7;
 var baddieCount = 7;
 var baddieAdjuster = 0;
@@ -138,7 +141,7 @@ var flameCount = 0;
 var evilwizardCount = 0;
 var zombieBirdCount = 0;
 var swampCreatureCount = 0;
-var shotPower = 1.35;
+var shotPower = 1.5;
 var knockback = 1;
 var runSpeed = 190;
 var runSpeedEndLevelAdjust = 0;
@@ -164,6 +167,7 @@ var zombieDeathSFX;
 var shortExplodeSFX;
 var collectSFX;
 var pewSound;
+var spinSFX;
 var swordZombieTest = false;
 
 /* global game */
@@ -198,7 +202,7 @@ var playState = {
             gameMusic = game.add.audio('forestMusic');
             gameMusic.play();
         }
-        
+        invulnerableTimer = game.time.now + 50;
         //  Set up gui and display text
         if (coins>=1000000) {
             coinsText = game.add.bitmapText(395, 10, 'font', (Math.round(coins/1000))/1000 + "M", 30);
@@ -212,6 +216,8 @@ var playState = {
         hpBar.scale.setTo(1.1, 1.1);
         hpCrop = new Phaser.Rectangle(0, 0, 88, 15);
         hpBar.crop(hpCrop);
+        hpCrop.x = (1-(health/maxHealth))*80;
+        hpBar.updateCrop();
         healthText = game.add.bitmapText(93, 7, 'fontWhite', 'HP: ' + health + "/" + maxHealth, 15);
         manaBar = game.add.sprite(92, 28, 'hudBarBlue');
         manaBar.scale.setTo(1.1, 1.1);
@@ -253,17 +259,21 @@ var playState = {
         player.body.setSize(27, 12, 2, 22);
         player.body.collideWorldBounds = true;
         player.isAlive = true;
+        player.spinTimer = 0;
         //  Our animations, walking left, right, up and down.
         player.animations.add('left', [9, 10, 11], 10, true);
         player.animations.add('right', [3, 4, 5], 10, true);
         player.animations.add('up', [0, 1, 2], 10, true);
         player.animations.add('down', [6, 7, 8], 10, true);
+        player.animations.add('spin', [14, 12, 15, 13], 8, false);
        
         bullets = game.add.group();
         bullets.enableBody = true;
         bullets.createMultiple(90, 'bullet');
         pewSound = game.add.audio('pew');
         shortExplodeSFX = game.add.audio('shortExplode');
+        spinSFX = game.add.audio('spinSFX');
+        spinSFX.allowMultiple = false;
         //enemy projectiles
         flameBullets = game.add.group();
         flameBullets.enableBody = true;   
@@ -396,7 +406,7 @@ var playState = {
               if (baddieY<0 || baddieY.isNaN) {
                   baddieY = 0;
               }
-              if (Math.random()>(0.6) && (baddieTotal>11) && ((baddieTotal-baddieCreated)*0.1)>9) {
+              if (Math.random()>(0.6) && (baddieTotal>11) && ((baddieTotal-baddieCreated)*0.1)>8) {
                 this.vampireCreate(baddieX, baddieY);
                 //console.log(i + ": vampire, " + baddieX + ", " + baddieY);
                 baddieCreated += 11;
@@ -405,7 +415,7 @@ var playState = {
                   array.splice(index, 1);
                 }
               }
-              else if (Math.random()>(0.6) && (baddieTotal>10) && ((baddieTotal-baddieCreated)*0.13)>9&& evilwizardCount<1) {
+              else if (Math.random()>(0.6) && (baddieTotal>10) && ((baddieTotal-baddieCreated)*0.13)>8&& evilwizardCount<1) {
                 this.evilwizardCreate(baddieX, baddieY);
                 //console.log(i + ": evil wizard, " + baddieX + ", " + baddieY);
                 baddieCreated += 10;
@@ -416,7 +426,7 @@ var playState = {
                   array.splice(index, 1);
                 }
               }
-              else if (backgroundScene=="wasteland" && (baddieTotal>9) && ((baddieTotal-baddieCreated)*0.13)>7.5) {
+              else if (backgroundScene=="wasteland" && (baddieTotal>9) && ((baddieTotal-baddieCreated)*0.13)>6.5) {
                 this.treeBeastCreate(baddieX, baddieY);
                 //console.log(i + ": tree beast, " + baddieX + ", " + baddieY);
                 baddieCreated += 9;
@@ -425,7 +435,7 @@ var playState = {
                   array.splice(index, 1);
                 }
               }
-              else if (Math.random()>(0.55) && (baddieTotal>9) && ((baddieTotal-baddieCreated)*0.13)>7.5&& swampCreatureCount<1) {
+              else if (Math.random()>(0.55) && (baddieTotal>9) && ((baddieTotal-baddieCreated)*0.13)>6.5&& swampCreatureCount<1) {
                 this.swampCreatureCreate(baddieX, baddieY);
                 //console.log(i + ": swamp creature, " + baddieX + ", " + baddieY);
                 baddieCreated += 9;
@@ -436,7 +446,7 @@ var playState = {
                   array.splice(index, 1);
                 }
               }
-              else if (Math.random()>(0.5) && (baddieTotal>8) && ((baddieTotal-baddieCreated)*0.14)>6.5&& zombieBirdCount<=5) {
+              else if (Math.random()>(0.5) && (baddieTotal>8) && ((baddieTotal-baddieCreated)*0.14)>6&& zombieBirdCount<=5) {
                 this.zombieBirdCreate(baddieX, baddieY);
                 //console.log(i + ": zombie bird, " + baddieX + ", " + baddieY);
                 baddieCreated += 8;
@@ -446,7 +456,7 @@ var playState = {
                   array.splice(index, 1);
                 }
               }
-              else if (Math.random()>(0.45) && (baddieTotal>7) && ((baddieTotal-baddieCreated)*0.15)>5.5) {
+              else if (Math.random()>(0.45) && (baddieTotal>7) && ((baddieTotal-baddieCreated)*0.15)>5) {
                 this.mummyCreate(baddieX, baddieY);
                 //console.log(i + ": mummy, " + baddieX + ", " + baddieY);
                 baddieCreated += 7;
@@ -455,7 +465,7 @@ var playState = {
                   array.splice(index, 1);
                 }
               }
-              else if (Math.random()>(0.4) && (baddieTotal>6) && ((baddieTotal-baddieCreated)*0.2)>5.5 && flameCount<=2) {
+              else if (Math.random()>(0.4) && (baddieTotal>6) && ((baddieTotal-baddieCreated)*0.2)>5 && flameCount<=2) {
                 this.flameCreate(baddieX, baddieY);
                 //console.log(i + ": flame, " + baddieX + ", " + baddieY);
                 baddieCreated += 6;
@@ -466,7 +476,7 @@ var playState = {
                   array.splice(index, 1);
                 }
               }
-              else if (Math.random()>(0.3) && (baddieTotal > baddieCreated)&&(baddieTotal>5)&&((baddieTotal-baddieCreated)*0.17)>3.5) {
+              else if (Math.random()>(0.3) && (baddieTotal > baddieCreated)&&(baddieTotal>5)&&((baddieTotal-baddieCreated)*0.17)>3) {
                 if (Math.random()*100>(117-stage)) {
                     this.skeletonCreate(baddieX, baddieY, "red");
                 }
@@ -480,7 +490,7 @@ var playState = {
                   array.splice(index, 1);
                 }
               }
-              else if (Math.random()>(0.20) && (baddieTotal > baddieCreated)&&(baddieTotal>4)&&((baddieTotal-baddieCreated)*0.14)>2) {
+              else if (Math.random()>(0.20) && (baddieTotal > baddieCreated)&&(baddieTotal>4)&&((baddieTotal-baddieCreated)*0.15)>2) {
                 if (Math.random()*100>(108-stage)) {
                     this.swordZombieCreate(baddieX, baddieY, "red");
                 }
@@ -675,6 +685,7 @@ var playState = {
         sKey = game.input.keyboard.addKey(Phaser.Keyboard.S);
         dKey = game.input.keyboard.addKey(Phaser.Keyboard.D);
         qKey = game.input.keyboard.addKey(Phaser.Keyboard.Q);
+        eKey = game.input.keyboard.addKey(Phaser.Keyboard.E);
         
         if (!game.device.desktop) { 
             buttonWalkLeft = game.add.button(20, 470, 'leftControl', null, this, 0, 1, 0, 1);
@@ -892,7 +903,7 @@ var playState = {
             beamSprite = game.add.sprite(223, 597, 'beamIcon');
             beamSprite.frame = 1;
             var style = { font:'18px courier bolder', fill: '#f99a08', stroke: 'black', strokeThickness: 1.5};
-            beamText = game.add.text(230, 604, 'SPACE', style);
+            beamText = game.add.text(230, 604, '  E', style);
             if (timerBeam!= null && timerBeam.running) {
                 beamText.text = this.formatTime(Math.round((timerBeamEvent.delay - timerBeam.ms) *0.001));
             }
@@ -922,16 +933,24 @@ var playState = {
         //enable separate hitbox for use in obstacle collisions
         playerLegs = game.add.sprite(0, 0, 'dude');
         game.physics.arcade.enable(playerLegs);
-        player.body.collideWorldBounds = true;
+        playerLegs.body.collideWorldBounds = true;
         playerLegs.alpha = 0;
         playerLegs.body.setSize(27, 32, 2, 2);
-        player.addChild(playerLegs);
+        //player.addChild(playerLegs);
         
         dummyPlayer = game.add.sprite(player.x, player.y, 'dude');
         dummyPlayer.alpha = 0;
     },
     
     update: function() {
+        /*if (player.x!=playerLegs.x || player.y!=playerLegs.y) {
+            console.log('exists' + playerLegs.exists + '/' + player.x + '/' + player.y + ':'  + playerLegs.x + '/' + playerLegs.y);
+        }*/
+        if (player.exists) { //fix melee attack collision detection problem
+            playerLegs.exists = true;
+            playerLegs.x = player.x;
+            playerLegs.y = player.y;
+        }
         //  Collide the player and enemies with the platforms(obstacles)
         game.physics.arcade.collide(player, platforms);
         game.physics.arcade.overlap(playerLegs, platforms, this.dummyPlayerShow, null, this);
@@ -976,11 +995,31 @@ var playState = {
         game.physics.arcade.collide(zombieBirds, zombieBirds); 
         //  Check to see if player overlaps with a chest    
         game.physics.arcade.overlap(playerLegs, stars, this.collectStar, null, this);
+        game.physics.arcade.overlap(player, stars, this.collectStar, null, this);
         game.physics.arcade.overlap(door, stars, this.collectStar, null, this);
         if (baddieCount<=0) {
-            game.physics.arcade.collide(playerLegs, door, this.doorOpen, null, this);        }
-        
-        if (game.time.now>invulnerableTimer){
+            game.physics.arcade.collide(playerLegs, door, this.doorOpen, null, this);    
+        }
+        if (spinning) {
+            game.physics.arcade.collide(playerLegs, baddies, this.badKill, null, this);
+            game.physics.arcade.collide(playerLegs, bossZombies, this.bossZombieKill, null, this);
+            game.physics.arcade.collide(playerLegs, bossZombieBirds, this.bossZombieBirdKill, null, this);
+            game.physics.arcade.collide(playerLegs, bossMummies, this.bossMummyKill, null, this);
+            game.physics.arcade.collide(playerLegs, bossFinals, this.bossFinalKill, null, this);
+            game.physics.arcade.collide(playerLegs, flames, this.flameKill, null, this);
+            game.physics.arcade.collide(playerLegs, skeletons, this.skeletonKill, null, this);
+            game.physics.arcade.collide(playerLegs, mummies, this.mummyKill, null, this);
+            game.physics.arcade.collide(playerLegs, spiders, this.spiderKill, null, this);
+            game.physics.arcade.collide(playerLegs, evilwizards, this.evilwizardKill, null, this);
+            game.physics.arcade.collide(playerLegs, swampCreatures, this.swampCreatureKill, null, this);
+            game.physics.arcade.collide(playerLegs, zombieBirds, this.zombieBirdKill, null, this);
+            game.physics.arcade.collide(playerLegs, miniZombieBirds, this.miniZombieBirdKill, null, this);
+            game.physics.arcade.collide(playerLegs, treeBeasts, this.treeBeastKill, null, this);
+            game.physics.arcade.collide(playerLegs, swordZombies, this.swordZombieKill, null, this);
+            game.physics.arcade.collide(playerLegs, vampires, this.vampireKill, null, this);
+            game.physics.arcade.collide(playerLegs, decoys, this.decoyKill, null, this);
+        }
+        else if (game.time.now>invulnerableTimer){
             player.alpha = 1;
             game.physics.arcade.overlap(playerLegs, baddies, this.badTouch, null, this);
             game.physics.arcade.overlap(playerLegs, swordZombies, this.badTouch, null, this);
@@ -1006,6 +1045,7 @@ var playState = {
         }
         else {
             player.alpha = 0.5;
+            //console.log(spinning);
         }
         game.physics.arcade.collide(bullets, baddies, this.badKill, null, this);
         game.physics.arcade.collide(bullets, bossZombies, this.bossZombieKill, null, this);
@@ -1025,6 +1065,7 @@ var playState = {
         game.physics.arcade.collide(bullets, swordZombies, this.swordZombieKill, null, this);
         game.physics.arcade.collide(bullets, vampires, this.vampireKill, null, this);
         game.physics.arcade.collide(bullets, decoys, this.decoyKill, null, this);
+        
         game.physics.arcade.overlap(skeletons, platforms, this.skeletonSmash, null, this);
         game.physics.arcade.overlap(mummies, platforms, this.mummySmash, null, this);
         game.physics.arcade.overlap(bossZombies, platforms, this.bossZombieSmash, null, this);
@@ -1043,38 +1084,87 @@ var playState = {
     
         if (aKey.isDown || walkLeft==true)        {
             //  Move to the left
-            player.body.velocity.x = -(runSpeed + runSpeedEndLevelAdjust);
-            player.animations.play('left');
+            if (wKey.isDown==false && sKey.isDown==false) {
+                diagonalAdjust = 1;
+            }
+            else {
+                diagonalAdjust = 0.71;
+            }
+            player.body.velocity.x = -((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else {
+                player.animations.play('left');
+            }
             facing = 'left';
             manaRegenInterval = manaRegenHolder- manaRegenEndLevelAdjust;
         }
-        else if (dKey.isDown || walkRight==true)      {
+        if (dKey.isDown || walkRight==true)      {
             //  Move to the right
-            player.body.velocity.x = (runSpeed + runSpeedEndLevelAdjust);
-            player.animations.play('right');
+            if (wKey.isDown==false && sKey.isDown==false) {
+                diagonalAdjust = 1;
+            }
+            else {
+                diagonalAdjust = 0.71;
+            }
+            player.body.velocity.x = ((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else {
+                player.animations.play('right');
+            }
             facing = 'right';
             manaRegenInterval = manaRegenHolder- manaRegenEndLevelAdjust;
         }
-        else if (wKey.isDown || walkUp==true)       {
+        if (wKey.isDown || walkUp==true)       {
             //  Move up
-            player.body.velocity.y = -(runSpeed + runSpeedEndLevelAdjust);
-            player.animations.play('up');
+            if (aKey.isDown==false && dKey.isDown==false) {
+                diagonalAdjust = 1;
+            }
+            else {
+                diagonalAdjust = 0.71;
+            }
+            player.body.velocity.y = -((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else if (aKey.isDown==false && dKey.isDown==false) {
+                player.animations.play('up');
+            }
             facing = 'up';
             manaRegenInterval = manaRegenHolder- manaRegenEndLevelAdjust;
         }
-        else if (sKey.isDown || walkDown==true)        {
+        if (sKey.isDown || walkDown==true)        {
             //  Move down
-            player.body.velocity.y = (runSpeed + runSpeedEndLevelAdjust);
-            player.animations.play('down');
+            if (aKey.isDown==false && dKey.isDown==false) {
+                diagonalAdjust = 1;
+            }
+            else {
+                diagonalAdjust = 0.71;
+            }
+            player.body.velocity.y = ((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else if (aKey.isDown==false && dKey.isDown==false) {
+                player.animations.play('down');
+            }
             facing = 'down';
             manaRegenInterval = manaRegenHolder- manaRegenEndLevelAdjust;
         }
-        else        {
+        if (aKey.isDown==false && dKey.isDown==false && wKey.isDown==false && sKey.isDown==false) {
             //  Stand still
-            player.animations.stop();
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else {
+                player.animations.stop();
+            }
             manaRegenInterval = (manaRegenHolder- manaRegenEndLevelAdjust)*0.25;
         }
-        if (fireButton.isDown && beamWeapon==true) {
+        if (eKey.isDown && beamWeapon==true) {
             this.beamWeaponActivate();
         }
         if (qKey.isDown && manaRefillAvailable==true) {
@@ -1091,6 +1181,13 @@ var playState = {
             else {
                 this.manaWarnHighlightShow();
             }
+        }
+        if (fireButton.isDown && spinning==false && mana>=10 && game.time.now>player.spinTimer) {
+            spinning = true;
+            spinSFX.play();
+            player.spinTimer = game.time.now + 750;
+            mana -= 10;
+            game.time.events.add(Phaser.Timer.SECOND * 0.5, function () {   spinning = false; });
         }
         
         this.baddieUpdate();
@@ -2604,38 +2701,42 @@ var playState = {
         star.destroy();
     },
     badTouch: function() {
-        var damage = Math.floor((1 + stage/32)*baddieDamageAdjuster);
-        //console.log(damage);
-        if (health>damage) {
-            health -= damage;
-            hpCrop.x = (1-(health/maxHealth))*80;
-            hpBar.updateCrop();
-            var grunt = game.add.audio('grunt');
-            grunt.play();
-            healthText.text = 'HP: ' + health + '/' + maxHealth;
-            invulnerableTimer = game.time.now + invulnerableSpacing;
-        }
-        else {
-            this.playerDeath();
+        if (spinning==false) {
+            var damage = Math.floor((1 + stage/32)*baddieDamageAdjuster);
+            //console.log(damage);
+            if (health>damage) {
+                health -= damage;
+                hpCrop.x = (1-(health/maxHealth))*80;
+                hpBar.updateCrop();
+                var grunt = game.add.audio('grunt');
+                grunt.play();
+                healthText.text = 'HP: ' + health + '/' + maxHealth;
+                invulnerableTimer = game.time.now + invulnerableSpacing;
+            }
+            else {
+                this.playerDeath();
+            }
         }
     },
     badTouchTwo: function() {
-        var damage = Math.floor((2 + stage*0.04)*baddieDamageAdjuster);
-        //console.log(damage);
-        if (health>damage) {
-            health -= damage;
-            hpCrop.x = (1-(health/maxHealth))*80;
-            hpBar.updateCrop();
-            var grunt = game.add.audio('grunt');
-            grunt.play();
-            healthText.text = 'HP: ' + health + '/' + maxHealth;
-            invulnerableTimer = game.time.now + invulnerableSpacing;
-            if (stage==50 && bossZombieKilled==false) {
-                this.badTouch();
+        if (spinning==false) {
+            var damage = Math.floor((2 + stage*0.04)*baddieDamageAdjuster);
+            //console.log(damage);
+            if (health>damage) {
+                health -= damage;
+                hpCrop.x = (1-(health/maxHealth))*80;
+                hpBar.updateCrop();
+                var grunt = game.add.audio('grunt');
+                grunt.play();
+                healthText.text = 'HP: ' + health + '/' + maxHealth;
+                invulnerableTimer = game.time.now + invulnerableSpacing;
+                if (stage==50 && bossZombieKilled==false) {
+                    this.badTouch();
+                }
             }
-        }
-        else {
-            this.playerDeath();
+            else {
+                this.playerDeath();
+            }
         }
     },
     freeze: function() {
@@ -2799,7 +2900,7 @@ var playState = {
             }
             baddie.destroy();
             totalMonstersKilled+= (0+1);
-            console.log('totalMonstersKilled:' + totalMonstersKilled);
+            //console.log('totalMonstersKilled:' + totalMonstersKilled);
             zombieDeathSFX.play();
             var death = game.add.sprite(baddie.x, baddie.y, 'deathSheet');
             if (baddie.colour=="red") {
@@ -3748,10 +3849,10 @@ var playState = {
             levelUpSFX.play();
             game.time.events.add(Phaser.Timer.SECOND * 1, function () {   levelUpImage.destroy();  });
             xp -= nextLevelXp;
-            nextLevelXp += Math.round(8 + playerLevel*0.75);
+            nextLevelXp += Math.round(8 + playerLevel*0.7);
             maxHealth ++;
             maxMana ++;
-            shotPower += 0.025;
+            shotPower += 0.05;
             health++;
             hpCrop.x = (1-(health/maxHealth))*80;
             hpBar.updateCrop();
@@ -3782,7 +3883,7 @@ var playState = {
             bossFinalKilled = false;
         }
         stage ++;
-        starTotal += 0.75;
+        starTotal += 0.8;
         baddieTotal ++;
         baddieCount = baddieTotal;
         baddieCreated = 0;
@@ -3800,6 +3901,7 @@ var playState = {
              102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
              118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130];
         sceneryCount = 0;
+        invulnerableTimer = game.time.now + 50;
         this.create();
     },
     playerDeath: function() {
@@ -3948,7 +4050,7 @@ var playState = {
         beamWeapon = false;
         beamSprite.frame = 0;
         var self = this;
-        game.time.events.add(Phaser.Timer.SECOND * 4, function () {   manaCost = 5; bulletSpacing = bulletSpacing*13.5; shotPower -= shotSpeed*0.002; self.beamWeaponTimer(); });
+        game.time.events.add(Phaser.Timer.SECOND * 4, function () {   manaCost = 4; bulletSpacing = bulletSpacing*13.5; shotPower -= shotSpeed*0.002; self.beamWeaponTimer(); });
     },
     beamWeaponTimer: function() {
         timerBeam = game.time.create();
@@ -3979,7 +4081,7 @@ var playState = {
         beamText.setStyle(style);
         beamText.x = 230;
         beamText.y = 604;
-        beamText.text = 'SPACE';
+        beamText.text = '  E';
         timerBeam.updateTimer = 0;
     },
     manaRefillActivate: function() {
@@ -4067,7 +4169,7 @@ var playState = {
     dummyPlayerShow: function(player, platforms) {
         if (player.body.y+25>(platforms.y+platforms.height)) {
             dummyPlayer.alpha = 1;
-            console.log('Platform.y/height/player.y:' + platforms.y + '/' + platforms.height + '/' + player.body.y);
+            //console.log('Platform.y/height/player.y:' + platforms.y + '/' + platforms.height + '/' + player.body.y);
             game.time.events.add(Phaser.Timer.SECOND * 0.1, function () {   dummyPlayer.alpha = 0; });
         }
     },

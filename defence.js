@@ -15,6 +15,7 @@ var defenceStrength = Math.round(defence/4);
 var defenderCount = Math.round(defence/4);
 var defenceAudio;
 var newCitizens;
+var defendingDoorOpen = false;
 
 var tutorialDefence = "first";
 var tutorialSprite;
@@ -80,20 +81,25 @@ var defenceState = {
         coinDisplay.frame = 0;
         
         // The player and its settings
-        player = game.add.sprite(16, 120, 'dude');
+        player = game.add.sprite(16, 300, 'dude');
         
-        //  We need to enable physics on the player
+        //  enable physics on the player
         game.physics.arcade.enable(player);
-        player.body.setSize(28, 32, 2, 2);
+        player.body.setSize(27, 12, 2, 22);
         player.body.collideWorldBounds = true;
         player.isAlive = true;
+        player.spinTimer = 0;
         //  Our animations, walking left, right, up and down.
         player.animations.add('left', [9, 10, 11], 10, true);
         player.animations.add('right', [3, 4, 5], 10, true);
         player.animations.add('up', [0, 1, 2], 10, true);
         player.animations.add('down', [6, 7, 8], 10, true);
+        player.animations.add('spin', [14, 12, 15, 13], 8, false);
         player.animations.add('stop', [4], 10, true);
         player.animations.play('stop');
+        
+        spinSFX = game.add.audio('spinSFX');
+        spinSFX.allowMultiple = false;
         
         bullets = game.add.group();
         bullets.enableBody = true;
@@ -106,27 +112,27 @@ var defenceState = {
         obstacles.enableBody = true;  
         
         for (var i=1; i<=attackStrength; i++) {
-            this.attackerCreate(750, (i-1)*32);
+            this.attackerCreate(750, ((i-1)*32)+(300-(attackStrength/2*32)));
         }
         if (coins>=0) {
             for (var i=0; i<=defenceStrength; i++) {
-                if (i<=12) {
-                    this.defenderCreate(224, i*32);
+                if (i<=10) {
+                    this.defenderCreate(224, (i*32)+(300-(defenceStrength/2*32)));
                 }
                 else {
-                    this.defenderCreate(188, (i-12)*32);
+                    this.defenderCreate(188, ((i-10)*32)+(300-(defenceStrength/2*32)));
                 }
             }
         }
-        for (var i=0; i<=17; i++) {
-            if (i<=8) {
-                var statue = obstacles.create(i*64, 160, 'statue');
+        for (var i=0; i<=7; i++) {
+            if (i<3) {
+                var statue = obstacles.create(512, (i*96)-40, 'statue');
                 statue.body.setSize(30, 18, 1, 45);
                 statue.body.immovable = true;
                 statue.frame = 0;
             }
             else {
-                var statue = obstacles.create((i-9)*64, 384, 'statue');
+                statue = obstacles.create(512, (i*96)-16, 'statue');
                 statue.body.setSize(30, 18, 1, 45);
                 statue.body.immovable = true;
                 statue.frame = 0;
@@ -333,6 +339,16 @@ var defenceState = {
             buttonFireDownRight.events.onInputDown.add(function(){fireDown=true;});
             buttonFireDownRight.events.onInputUp.add(function(){fireDown=false;});
         }
+        //enable separate hitbox for use in obstacle collisions
+        playerLegs = game.add.sprite(0, 0, 'dude');
+        game.physics.arcade.enable(playerLegs);
+        playerLegs.body.collideWorldBounds = true;
+        playerLegs.alpha = 0;
+        playerLegs.body.setSize(27, 32, 2, 2);
+        //player.addChild(playerLegs);
+        
+        dummyPlayer = game.add.sprite(player.x, player.y, 'dude');
+        dummyPlayer.alpha = 0;
         
         resultBackground = game.add.sprite(-1000, 150, 'scrollStrip');
         resultText = game.add.bitmapText(140, 185, 'font', '', 32);
@@ -342,21 +358,33 @@ var defenceState = {
     },
     update: function() {
         if (tutorialDefence == "") {
+        
+        if (player.exists && defendingDoorOpen==false) {
+            playerLegs.exists = true;
+            playerLegs.x = player.x;
+            playerLegs.y = player.y;
+        }
         //game.physics.arcade.collide(player, defenders);
         game.physics.arcade.collide(defenders, attackers, this.npcFight, null, this);
         game.physics.arcade.collide(attackers, attackers);
         game.physics.arcade.collide(defenders, defenders);
         game.physics.arcade.collide(player, obstacles);
+        game.physics.arcade.overlap(playerLegs, obstacles, this.dummyPlayerShow, null, this);
         game.physics.arcade.collide(attackers, obstacles, this.attackerMove, null, this);
         game.physics.arcade.collide(defenders, obstacles);
-        if (game.time.now>invulnerableTimer){
+        
+        game.physics.arcade.collide(bullets, attackers, this.attackerKill, null, this);
+        if (spinning) {
+            game.physics.arcade.collide(playerLegs, attackers, this.attackerKill, null, this);
+        }
+        else if (game.time.now>invulnerableTimer){
             player.alpha = 1;
-            game.physics.arcade.collide(player, attackers, this.badTouchDefence, null, this);
+            game.physics.arcade.collide(playerLegs, attackers, this.badTouchDefence, null, this);
         }
         else {
             player.alpha = 0.5;
         }
-        game.physics.arcade.collide(bullets, attackers, this.attackerKill, null, this);
+        
         if (attackerCount<=0) {
             game.physics.arcade.collide(player, door, this.defenceDoorOpen, null, this);
         }
@@ -366,47 +394,103 @@ var defenceState = {
     
         if (aKey.isDown || walkLeft==true)        {
             //  Move to the left
-            player.body.velocity.x = -(runSpeed + runSpeedEndLevelAdjust);
-            player.animations.play('left');
+            if (wKey.isDown==false && sKey.isDown==false) {
+                diagonalAdjust = 1;
+            }
+            else {
+                diagonalAdjust = 0.71;
+            }
+            player.body.velocity.x = -((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else {
+                player.animations.play('left');
+            }
             facing = 'left';
             manaRegenInterval = manaRegenHolder- manaRegenEndLevelAdjust;
         }
-        else if (dKey.isDown || walkRight==true)      {
+        if (dKey.isDown || walkRight==true)      {
             //  Move to the right
-            player.body.velocity.x = (runSpeed + runSpeedEndLevelAdjust);
-            player.animations.play('right');
+            if (wKey.isDown==false && sKey.isDown==false) {
+                diagonalAdjust = 1;
+            }
+            else {
+                diagonalAdjust = 0.71;
+            }
+            player.body.velocity.x = ((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else {
+                player.animations.play('right');
+            }
             facing = 'right';
             manaRegenInterval = manaRegenHolder- manaRegenEndLevelAdjust;
         }
-        else if (wKey.isDown || walkUp==true)       {
+        if (wKey.isDown || walkUp==true)       {
             //  Move up
-            player.body.velocity.y = -(runSpeed + runSpeedEndLevelAdjust);
-            player.animations.play('up');
+            if (aKey.isDown==false && dKey.isDown==false) {
+                diagonalAdjust = 1;
+            }
+            else {
+                diagonalAdjust = 0.71;
+            }
+            player.body.velocity.y = -((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else if (aKey.isDown==false && dKey.isDown==false) {
+                player.animations.play('up');
+            }
             facing = 'up';
             manaRegenInterval = manaRegenHolder- manaRegenEndLevelAdjust;
         }
-        else if (sKey.isDown || walkDown==true)        {
+        if (sKey.isDown || walkDown==true)        {
             //  Move down
-            player.body.velocity.y = (runSpeed + runSpeedEndLevelAdjust);
-            player.animations.play('down');
+            if (aKey.isDown==false && dKey.isDown==false) {
+                diagonalAdjust = 1;
+            }
+            else {
+                diagonalAdjust = 0.71;
+            }
+            player.body.velocity.y = ((runSpeed*diagonalAdjust) + runSpeedEndLevelAdjust);
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else if (aKey.isDown==false && dKey.isDown==false) {
+                player.animations.play('down');
+            }
             facing = 'down';
             manaRegenInterval = manaRegenHolder- manaRegenEndLevelAdjust;
         }
-        else        {
+        if (aKey.isDown==false && dKey.isDown==false && wKey.isDown==false && sKey.isDown==false) {
             //  Stand still
-            player.animations.stop();
+            if (spinning) {
+                player.animations.play('spin'); 
+            }
+            else {
+                player.animations.stop();
+            }
             manaRegenInterval = (manaRegenHolder- manaRegenEndLevelAdjust)*0.25;
         }
         
         if ((cursors.right.isDown || cursors.left.isDown || cursors.up.isDown || cursors.down.isDown || fireLeft==true || fireRight==true || fireUp==true || fireDown==true) && game.time.now>bulletTimer && player.isAlive && mana>=manaCost) {
             this.fire();
-            mana -= 5;
+            mana -= 4;
             manaText.text = 'MP: ' + mana + "/" + maxMana;
         }
-        
+        if (spaceBar.isDown && spinning==false && mana>=10 && game.time.now>player.spinTimer) {
+            spinning = true;
+            spinSFX.play();
+            player.spinTimer = game.time.now + 750;
+            mana -= 10;
+            game.time.events.add(Phaser.Timer.SECOND * 0.5, function () {   spinning = false; });
+        }
         this.manaRegen();
         this.defenderUpdate();
         this.attackerUpdate();
+        this.dummyPlayerUpdate();
         }
         else {
             player.body.velocity.x = 0;
@@ -787,7 +871,7 @@ var defenceState = {
             nextLevelXp += Math.round(8 + playerLevel*0.75);
             maxHealth ++;
             maxMana ++;
-            shotPower += 0.025;
+            shotPower += 0.05;
             health = maxHealth;
             mana = maxMana;
             playerLevel ++;
@@ -837,9 +921,11 @@ var defenceState = {
     },
     defenceDoorOpen: function() {
         door.animations.play('openDoor');
+        defendingDoorOpen = true;
         var doorOpenSFX = game.add.audio('creakylightwoodendoor1');
         doorOpenSFX.play();
         player.kill();
+        playerLegs.kill();
         defenceAudio.stop();
         var self = this;
         game.time.events.add(Phaser.Timer.SECOND * 2, function () {   self.defenceComplete();  });
@@ -912,7 +998,7 @@ var defenceState = {
                 this.tutorialText();
                 tutorialText.text = " Your Majesty!";
                 tutorialText2.text = "   Our defenders will";
-                tutorialText3.text = " shield you if you stay ";
+                tutorialText3.text = "   shield you if you stay ";
                 tutorialText4.text = " behind them. You should ";
                 tutorialText5.text = " keep your distance from";
                 tutorialText6.text = "  the enemy.";
@@ -1028,4 +1114,16 @@ var defenceState = {
         }
         xpText.text = "XP: " + xpDisplay + '/' + nextLevelXpDisplay;
     },
+    dummyPlayerShow: function(player, platforms) {
+        if (player.body.y+25>(platforms.y+platforms.height)) {
+            dummyPlayer.alpha = 1;
+            console.log('Platform.y/height/player.y:' + platforms.y + '/' + platforms.height + '/' + player.body.y);
+            game.time.events.add(Phaser.Timer.SECOND * 0.1, function () {   dummyPlayer.alpha = 0; });
+        }
+    },
+    dummyPlayerUpdate: function() {
+        dummyPlayer.x = player.body.x-1;
+        dummyPlayer.y = player.body.y-22;
+        dummyPlayer.frame = player.frame;
+    }
 };

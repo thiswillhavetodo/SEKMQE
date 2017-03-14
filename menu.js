@@ -33,10 +33,11 @@ var menuState = {
         //game.add.sprite(66, 40, 'titleBack');
         //game.add.sprite(146, 50, 'title');
         //game.stage.backgroundColor = '#3b5998';
-        game.add.bitmapText(5, 620, 'fontWhite', "version k0.4", 16);
+        game.add.bitmapText(5, 620, 'fontWhite', "version k0.5", 16);
         var creditsButton = game.add.button(0, 0, 'creditsButton', this.credits, this);
-        var startButton = game.add.button(210, 420, 'startButton', this.start, this);
-        var loadButton = game.add.button(450, 420, 'loadButton', this.loadSave, this);
+        var startButton = game.add.button(180, 400, 'startButton', this.start, this);
+        var loadButton = game.add.button(450, 400, 'loadButton', this.loadSave, this);
+        loadButton.scale.setTo(0.9, 0.9);
         /*game.add.sprite(60, 394, 'castle');
         titlePlayer = game.add.sprite(600, 570, 'dude');
         game.physics.arcade.enable(titlePlayer);

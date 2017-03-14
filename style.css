@@ -28,13 +28,12 @@ body {
 .controls {
     position: absolute;
     width: 500px;
-    bottom: 3.5vh;
+    bottom: 2.5vh;
     left: -250px;
     font-family: 'Raleway', sans-serif;
     font-size: 14px;
     text-align: center;
     color: black;
-    padding: 2px;
     border: solid #787878;
     border-width: 0.1vw;
     background-color: #ffffff;
@@ -51,6 +50,10 @@ body {
     width: 15px;
     height: 15px;
     margin-left: 2px;
+}
+
+#melee {
+    width: 45px;
 }
 
 .mid-container {
@@ -125,6 +128,9 @@ body {
     }
     .copyright {
         font-size: 9px;
+    }
+    #signupButton {
+        width: 11.7vw;
     }
 }
 /*
@@ -399,14 +405,15 @@ video {
 
 #mc_embed_signup {
     position: absolute;
-    right: 198px;
-    top: 20vh;
+    left: 12vw;
+    bottom: 0;
     width: 25vw;
     min-width: 250px;
     background: #fff; 
     clear: left; 
     font: 14px 'Raleway', Arial, sans-serif; 
     display: none;
+    z-index: 1;
 }
 
 #signup-header {
@@ -417,15 +424,19 @@ video {
 }	
 
 #signupButton {
+    position: absolute;
+    left: 0;
+    bottom: 0;
     font-family: 'Raleway', sans-serif;
     font-size: 14px;
     text-align: center;
     color: #787878;
-    border: none;
+    border: solid 1px #787878;
     border-radius: 5px;
     margin: 10px 2px;
     cursor: pointer;
     background-color: white;
+    width: 10vw;
 }
 
 #chitikaAdBlock-0 {
