@@ -291,7 +291,7 @@ video {
     width: 100%;
     height: 5.2vw;
     position: relative;
-    top: 40vh;
+    top: 5vh;
     right: 0;
     background-image: url(webAssets/rubbleLogoLarge.png);
     background-size: 100% 100%;
@@ -440,7 +440,8 @@ video {
 }
 
 #chitikaAdBlock-0 {
-    float: left;
+    margin-top: 10vh;
+    float: right;
 }
 
 #chitikaAdBlock-1 {
