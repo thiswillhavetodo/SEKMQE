@@ -26,7 +26,7 @@ var preloadState = {
         game.load.audio('woodSmash', 'assets/woodSmash.ogg');
         game.load.audio('teleport', 'assets/teleport.ogg');
         game.load.audio('levelUpSound', 'assets/Accept.ogg');
-        game.load.audio('titleTheme', 'assets/titleTheme.ogg');
+        game.load.audio('titleTheme', ['assets/titleTheme.ogg', 'assets/titleTheme.m4a']);
         game.load.audio('bubble', 'assets/bubbles.ogg');
         game.load.audio('creakylightwoodendoor1', 'assets/creakylightwoodendoor1.ogg');
         game.load.audio('shotSFX', 'assets/shotSFX.ogg');

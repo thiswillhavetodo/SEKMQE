@@ -14,7 +14,7 @@ var introState = {
         cutScene = game.add.sprite(0, 0, 'introCutscene');
         game.add.sprite(0, 0, 'cutsceneBorder');
         game.add.button(-5, -5, 'blankButton', this.skip, this);
-        skipText = game.add.bitmapText(40, 20, 'font', 'Skip Cutscene', 16);
+        skipText = game.add.bitmapText(40, 23, 'font', 'Skip Cutscene', 16);
         lowerTypewriter = new Typewriter();
         lowerTypewriter.init(game, {
             x: 116,
@@ -55,6 +55,6 @@ var introState = {
         game.time.events.add(Phaser.Timer.SECOND * 1.5, function () { lowerTypewriter.start(); });
     },
     startButtonTextChange: function() {
-        skipText.text = "Start Game";
+        skipText.text = "    Start Game";
     }
 };
